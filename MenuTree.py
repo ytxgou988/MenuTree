@@ -2,15 +2,15 @@
 # -*- coding: utf-8 -*-
 
 from Tkinter import *
+from PIL import Image, ImageTk
+from time import sleep
 import ttk
 import tkFileDialog
-from PIL import Image, ImageTk
 import utils1
 import xml.etree.ElementTree as ET
 import os
-from time import sleep
 
-DIR = 'results'
+DIR = './results/'
 
 class MenuTree:
     def __init__(self):
@@ -20,17 +20,21 @@ class MenuTree:
         self.package = ''
         self.top = Tk()
         self.top.title('MenuTree')
+
+#Menubar
         self.menubar = Menu(self.top)
         self.menu = Menu(self.menubar, tearoff = 0)
         self.menu.add_command(label = 'Open', command = self.askopenfile)
         self.menubar.add_cascade(label = 'File', menu = self.menu)
         self.top['menu'] = self.menubar
 
-
+#MainFrame
         self.frame = Frame(self.top)
 
+#LeftFrame:Filter and Treeview
         self.leftFrame = Frame(self.frame)
 
+#FilterFrame
         self.lefttopFrame = Frame(self.leftFrame)
         self.filterFrame = Frame(self.lefttopFrame)
         self.flabel = Label(self.filterFrame, text = 'Filter')
@@ -49,23 +53,30 @@ class MenuTree:
 
         self.lefttopFrame.pack(anchor = 'w', pady = 5)
 
+#TreeviewFrame
         self.tframe = Frame(self.leftFrame)
         self.sb = Scrollbar(self.tframe,)
         self.sb.pack(side = RIGHT, fill = Y)
         self.show_tree()
         self.leftFrame.pack(side = LEFT, pady = 10, padx = 5)
+#LeftFrame end
 
+#RightFrame:Title, Button and Picture
         self.rightFrame = Frame(self.frame)
 
+#TitleFrame
         self.titleFrame = Frame(self.rightFrame)
         self.titlevar = StringVar()
         self.title_label = Label(self.titleFrame, text = 'Title')
         self.title_label.pack(side = LEFT, padx = 15)
-        self.title_entry = Entry(self.titleFrame, width = 30, textvariable = self.titlevar)
+        self.title_entry = Entry(self.titleFrame,
+                width = 30,
+                textvariable = self.titlevar)
         self.titlevar.set('')
         self.title_entry.pack(side = RIGHT)
         self.titleFrame.pack(padx = 10, pady = 5)
 
+#ButtonFrame
         self.buttonFrame = Frame(self.rightFrame)
         self.langLabel = Label(self.buttonFrame, text = 'Language')
         self.langLabel.pack(side = LEFT, padx = 10)
@@ -86,25 +97,38 @@ class MenuTree:
         self.save_button.pack()
         self.buttonFrame.pack(padx = 10, pady = 5)
 
+#PictureFrame
         self.picframe = Frame(self.rightFrame)
-        self.canvas = Canvas(self.picframe, width = 360, height = 640, bg = 'white')
+        self.canvas = Canvas(self.picframe,
+                width = 360,
+                height = 640,
+                bg = 'white')
         self.show_pic()
         self.canvas.pack()
         self.picframe.pack()
 
         self.rightFrame.pack(side = RIGHT, padx = 10, pady = 10)
+#RightFrame end
 
         self.frame.pack()
-
+#MainFrame end
         self.top.mainloop()
 
     def askopenfile(self):
+        """
+        Openfile Menu
+        """
+
         self.xmlfile =  tkFileDialog.askopenfilename()
         self.path = os.path.split(self.xmlfile)[0]
         self.package = self.path.split('/')[-1]
         self.show_tree()
 
     def show_tree(self, filter = None):
+        """
+        Show xml tree in Treeview Frame
+        """
+
         try:
             self.tree.destroy()
         except:
@@ -123,6 +147,10 @@ class MenuTree:
         self.tframe.pack()
 
     def create_Tree(self, filter = None):
+        """
+        Read xml file and create root
+        """
+
         try:
             self.dataTree = ET.ElementTree(file = self.xmlfile)
             self.root = self.dataTree.getroot()
@@ -132,12 +160,17 @@ class MenuTree:
             pass
 
     def insert(self, node, parent, filter = None):
+        """
+        Insert nodes to the tree
+        """
+
         for child in node:
             if child.attrib['Type'] != filter:
                 cid = self.tree.insert(parent,
                         END,
                         text=child.attrib['Title'],
-                        values = [child.attrib['Type'], child.attrib['Image'].split('\\')[1]],
+                        values = [child.attrib['Type'],
+                            child.attrib['Image'].split('\\')[1]],
                         open=True,
                         tags = 'filter')
                 self.insert(child, cid, filter)
@@ -145,11 +178,16 @@ class MenuTree:
                 cid = self.tree.insert(parent,
                         END,
                         text= child.attrib['Title'],
-                        values = [child.attrib['Type'], child.attrib['Image'].split('\\')[1]],
+                        values = [child.attrib['Type'],
+                            child.attrib['Image'].split('\\')[1]],
                         open=True)
                 self.insert(child, cid, filter)
 
     def select_item(self, event):
+        """
+        Handle treeview selection event
+        """
+
         curitem = self.tree.item(self.tree.selection())
         self.title = curitem['text']
         if curitem['values']:
@@ -159,6 +197,10 @@ class MenuTree:
         self.show_pic()
 
     def tree_filter(self, event):
+        """
+        Handle type filter event
+        """
+
         if self.filtervar.get() == 'All':
             self.show_tree()
         elif self.filtervar.get() == 'Manual':
@@ -167,6 +209,10 @@ class MenuTree:
             self.show_tree('Automation')
 
     def show_pic(self, path = None):
+        """
+        Print pics in Picture Frame
+        """
+
         if path:
             imgpath = path
         else:
@@ -181,12 +227,20 @@ class MenuTree:
             print "No such pic"
 
     def change_lang(self, event):
+        """
+        Handle language change event
+        """
+
         try:
             os.system('adb shell /data/aatpc lang %s' % self.langvar.get())
         except:
             print "Can't change language"
 
     def capture(self, event):
+        """
+        Handle capture button event
+        """
+
         self.picname = self.title + '.png'
         os.system('adb shell screencap -p /data/%s' % self.picname)
         sleep(1)
@@ -194,6 +248,10 @@ class MenuTree:
         self.show_pic('tmp/%s'%self.picname)
 
     def save(self, event):
+        """
+        Handle save button event
+        """
+
         des = os.path.join(DIR, self.langvar.get(), self.package)
         if not os.path.exists(des):
             os.makedirs(des)
