@@ -10,11 +10,14 @@ import xml.etree.ElementTree as ET
 import os
 from time import sleep
 
+DIR = 'results'
+
 class MenuTree:
     def __init__(self):
         self.imagepath = ''
-        self.xmlfile = 'test.xml'
+        self.xmlfile = ''
         self.path = ''
+        self.package = ''
         self.top = Tk()
         self.top.title('MenuTree')
         self.menubar = Menu(self.top)
@@ -120,10 +123,14 @@ class MenuTree:
         self.tframe.pack()
 
     def create_Tree(self, filter = None):
-        self.dataTree = ET.ElementTree(file = self.xmlfile)
-        self.root = self.dataTree.getroot()
-        self.parent = self.tree.insert('', END, text = self.root.tag, open=True)
-        self.insert(self.root, self.parent, filter)
+        try:
+            self.dataTree = ET.ElementTree(file = self.xmlfile)
+            self.root = self.dataTree.getroot()
+            self.parent = self.tree.insert('', END, text = self.root.tag, open=True)
+            self.insert(self.root, self.parent, filter)
+        except:
+            pass
+
     def insert(self, node, parent, filter = None):
         for child in node:
             if child.attrib['Type'] != filter:
@@ -141,6 +148,7 @@ class MenuTree:
                         values = [child.attrib['Type'], child.attrib['Image'].split('\\')[1]],
                         open=True)
                 self.insert(child, cid, filter)
+
     def select_item(self, event):
         curitem = self.tree.item(self.tree.selection())
         self.title = curitem['text']
@@ -157,6 +165,7 @@ class MenuTree:
             self.show_tree('Manual')
         elif self.filtervar.get() == 'Automation':
             self.show_tree('Automation')
+
     def show_pic(self, path = None):
         if path:
             imgpath = path
@@ -178,13 +187,19 @@ class MenuTree:
             print "Can't change language"
 
     def capture(self, event):
-        os.system('adb shell screencap -p /data/%s.png' % self.title)
+        self.picname = self.title + '.png'
+        os.system('adb shell screencap -p /data/%s' % self.picname)
         sleep(1)
-        os.system('adb pull /data/%s.png /tmp/%s.png' % (self.title, self.title))
-        self.show_pic('/tmp/%s.png'%self.title)
+        os.system('adb pull /data/%s tmp/%s' % (self.picname, self.picname))
+        self.show_pic('tmp/%s'%self.picname)
 
     def save(self, event):
-        pass
+        des = os.path.join(DIR, self.langvar.get(), self.package)
+        if not os.path.exists(des):
+            os.makedirs(des)
+        print des
+        print '%s/%s'%(des, self.picname)
+        os.system("mv 'tmp/%s' '%s/%s'" % (self.picname, des, self.picname))
 
 def main():
     t = MenuTree()
